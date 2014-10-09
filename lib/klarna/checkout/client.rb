@@ -66,7 +66,7 @@ module Klarna
       # the full order being retrieved.
       #
       # To update an order without fetching it first, you can create a new
-      # order with only the id and call this method with it as well as the
+      # order with only the id and call this method with the order and the
       # attributes to update.
       #
       # @see write_order
