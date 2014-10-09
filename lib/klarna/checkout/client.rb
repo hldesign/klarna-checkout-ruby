@@ -47,7 +47,7 @@ module Klarna
         order
       end
 
-      def read_order(id) 
+      def read_order(id)
         response = https_connection.get do |req|
           req.url "/checkout/orders/#{id}"
 
@@ -60,10 +60,27 @@ module Klarna
         Order.new(JSON.parse(response.body))
       end
 
-      def update_order(order)
-        return false unless order.valid?
+      # Updates the order in klarna. If hash with attributes is specified, only
+      # those attributes will be updated, otherwise the entire order body will
+      # be sent. This can be used to only update the status of an order after
+      # the full order being retrieved.
+      #
+      # To update an order without fetching it first, you can create a new
+      # order with only the id and call this method with it as well as the
+      # attributes to update.
+      #
+      # @see write_order
+      #
+      # @param [Klarna::Checkout::Order] order
+      # @param [Hash] attributes Order attributes that should be updated.
+      #
+      # @return [Klarna::Checkout::Order] response order
+      def update_order(order, attributes = nil)
+        # Order id needs to be present, otherwise write_order will create an
+        # order and response body will be blank
+        return false unless order.valid? && order.id.present?
 
-        response = write_order(order)
+        response = write_order(order, attributes)
         Order.new(JSON.parse(response.body))
       end
 
@@ -99,11 +116,15 @@ module Klarna
 
       private
 
-      def write_order(order)
+      # @param [Klarna::Checkout::Order] order
+      # @param [Hash] request_body Order attributes that should be updated.
+      #               Will default to order.to_json if not present.
+      # @return [Faraday::Response] response
+      def write_order(order, request_body = nil)
         path  = "/checkout/orders"
         path += "/#{order.id}" if order.id
 
-        request_body = order.to_json
+        request_body ||= order.to_json
         response = https_connection.post do |req|
           req.url path
 
