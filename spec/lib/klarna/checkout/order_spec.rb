@@ -327,7 +327,7 @@ describe Klarna::Checkout::Order do
 
     it "doesn't allow setting something other than a hash" do
       expect {
-        described_class.defaults = :foobar  
+        described_class.defaults = :foobar
       }.to raise_error(ArgumentError)
     end
   end
@@ -370,5 +370,107 @@ describe Klarna::Checkout::Order do
         order.merchant.id.should       eq '666666'
       end
     end
-  end 
+  end
+
+  describe "update" do
+    context "with some values set" do
+      let(:order) do
+        described_class.new \
+          merchant_reference: {
+            orderid1: 'foo',
+            orderid2: 'bar'
+          },
+          purchase_country:   'NO',
+          purchase_currency:  'NOK',
+          locale: 'nb-no',
+          cart: {
+            items: [
+              {
+                reference:  '1123581220325',
+                name:       'Widget',
+                quantity:   1,
+                unit_price: 666,
+                tax_rate:   2500
+              },
+              {
+                reference:  '1123581220326',
+                name:       'Widget 2',
+                quantity:   3,
+                unit_price: 222,
+                tax_rate:   2500
+              }
+            ]
+          },
+          gui: {
+            layout: 'desktop'
+          },
+          merchant: {
+            id: '666666',
+            terms_uri:        'http://www.example.com/terms',
+            checkout_uri:     'http://www.example.com/checkout',
+            confirmation_uri: 'http://www.example.com/confirmation_uri',
+            push_uri:         'http://www.example.com/push'
+          },
+          shipping_address: {
+            street_address: 'Example Street 1',
+            postal_code: '3045',
+            city: 'Drammen',
+            country: 'NO',
+            email: 'test@example.com',
+            phone: '99988777'
+          }
+      end
+
+      it 'should be possible to update some values without affecting the other values' do
+        order.merchant.id.should eq '666666'
+        order.merchant.terms_uri.should eq 'http://www.example.com/terms'
+        order.merchant.update(id: '777777')
+        order.merchant.id.should eq '777777'
+        order.merchant.terms_uri.should eq 'http://www.example.com/terms'
+        order.locale.should eq 'nb-no'
+
+        order.cart.items.size.should eq 2
+
+        item = order.cart.items.first
+        item.reference.should eq '1123581220325'
+        item.quantity.should eq 1
+
+        order.update({
+          cart: {
+            items: [
+              {
+                reference:  '1123581220326',
+                name:       'Widget 2',
+                quantity:   4,
+                unit_price: 223,
+                tax_rate:   2500
+              },
+              {
+                reference:  '1123581220327',
+                name:       'Widget 3',
+                quantity:   3,
+                unit_price: 333,
+                tax_rate:   2500
+              },
+              {
+                reference:  '1123581220328',
+                name:       'Widget 4',
+                quantity:   1,
+                unit_price: 444,
+                tax_rate:   2500
+              }
+            ]
+          }
+        })
+
+        order.locale.should eq 'nb-no'
+        order.cart.items.size.should eq 3
+        item = order.cart.items.first
+        item.reference.should eq '1123581220326'
+        item.quantity.should eq 4
+        item.unit_price.should eq 223
+      end
+    end
+  end
+
 end
