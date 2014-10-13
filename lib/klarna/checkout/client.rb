@@ -76,12 +76,17 @@ module Klarna
       #
       # @return [Klarna::Checkout::Order] response order
       def update_order(order, attributes = nil)
-        # Order id needs to be present, otherwise write_order will create an
-        # order and response body will be blank
-        return false unless order.valid? && order.id.present?
+        return false unless order.valid?
 
         response = write_order(order, attributes)
-        Order.new(JSON.parse(response.body))
+        if order.id.present?
+          # Klarna update method returns 'An updated representation of the Checkout Order'
+          Order.new(JSON.parse(response.body))
+        else
+          # Klarna create method returrns 'URI of the new Checkout Order resource'
+          order.id = response.headers['Location'].split('/').last
+          order
+        end
       end
 
       # Based on example from:
@@ -116,6 +121,9 @@ module Klarna
 
       private
 
+      # Creates or updates the order, depending on order.id being present or
+      # not.
+      #
       # @param [Klarna::Checkout::Order] order
       # @param [Hash] request_body Order attributes that should be updated.
       #               Will default to order.to_json if not present.
