@@ -23,6 +23,7 @@ module Klarna
           setter = "#{attr.to_s}="
           self.send(setter, value) if respond_to?(setter)
         end
+        self
       end
 
       def to_json(*keys)
