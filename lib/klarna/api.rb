@@ -32,61 +32,7 @@ module Klarna
       end
     end
 
-    # Digest
-    #
-    # Build digest. Any field in optional_info that is set is included in
-    # the digest.
-    #
-    # Consist of all values from the variables which you send in the call
-    # separated with a colon without the square brackets. Variables in
-    # parentheses are optional.
-    # If you are not sending a variable, remove that from the digest. Shared
-    # secret must be the last variable.
-    #
-    # Example:
-    #   base64encode(sha512("4:1:[client_vsn]:[eid]:[rno]:[flags](:[orderid1])
-    #         (:[orderid2])(:[referece])(:[reference_code]):[shared_secret]"))
-    #
-    # @param [String] rno
-    # @param [Hash] optional_info
-    #
-    def digest(rno, optional_info)
-
-      optional_keys = [
-        :bclass,
-        :cust_no,
-        :flags,
-        :ocr,
-        :orderid1,
-        :orderid2,
-        :reference,
-        :reference_code
-      ]
-
-      digest_optional_info = optional_info.values_at(optional_keys).compact
-
-      if optional_info[:artnos]
-        optional_info[:artnos].each do |article|
-          digest_optional_info.push article[:artno]
-          digest_optional_info.push article[:qty]
-        end
-      end
-
-      array = [
-        KLARNA_API_VERSION.gsub('.', ':'),
-        VERSION,
-        merchant_id,
-        rno,
-        *digest_optional_info,
-        secret
-      ]
-
-      ::Digest::SHA512.base64digest(array.join(':'))
-    end
-
     # Activates the order in klarna.
-    #
-    # @see https://developers.klarna.com/en/api-references-v1/manage-orders#activate
     #
     # optional_info structure
     #
@@ -135,11 +81,33 @@ module Klarna
     #
     # TODO: shipment_info structure
     #
-    def activate(rno, params = {})
-      optional_info = params.fetch(:optional_info, {})
-
+    # @see https://developers.klarna.com/en/api-references-v1/manage-orders#activate
+    #
+    # @param [String] rno - Klarna order reservation number
+    # @param [Hash] optional_info
+    #
+    #
+    # @return [Array] [risk_status, invoice_number]
+    #
+    # risk_status - This represents the risk status and can have two values:
+    #
+    #   OK -      this response means that the order has passed Klarna’s fraud
+    #              and credit assessment
+    #   no_risk - this response means that Klarna will not assume the fraud
+    #             risk for this order
+    #
+    # invoice_number - This number represents the invoice number in Klarna’s
+    #                  system and should be used in all subsequent order
+    #                  handling calls.
+    #
+    #
+    # @raise [XMLRPC::FaultException] FaultException has two accessor-methods
+    #                                 faultCode an Integer, and faultString a
+    #                                 String.
+    #
+    def activate(rno, optional_info = {})
       params_list = [
-        merchant_id,
+        merchant_id.to_i,
         digest(rno, optional_info),
         rno,
         optional_info
@@ -148,6 +116,61 @@ module Klarna
       xmlrpc_client.call('activate', KLARNA_API_VERSION, VERSION, *params_list)
     end
 
+    # Digest
+    #
+    # Build digest. Any field in optional_info that is set is included in
+    # the digest.
+    #
+    # Consist of all values from the variables which you send in the call
+    # separated with a colon without the square brackets. Variables in
+    # parentheses are optional.
+    # If you are not sending a variable, remove that from the digest. Shared
+    # secret must be the last variable.
+    #
+    # Example:
+    #   base64encode(sha512("4:1:[client_vsn]:[eid]:[rno]:[flags](:[orderid1])
+    #         (:[orderid2])(:[referece])(:[reference_code]):[shared_secret]"))
+    #
+    # @param [String] rno
+    # @param [Hash] optional_info
+    #
+    def digest(rno, optional_info)
+
+      optional_keys = [
+        :bclass,
+        :cust_no,
+        :flags,
+        :ocr,
+        :orderid1,
+        :orderid2,
+        :reference,
+        :reference_code
+      ]
+
+      digest_optional_info = optional_info.values_at(*optional_keys).compact
+
+      if optional_info[:artnos]
+        optional_info[:artnos].each do |article|
+          digest_optional_info.push article[:artno]
+          digest_optional_info.push article[:qty]
+        end
+      end
+
+      array = [
+        KLARNA_API_VERSION.gsub('.', ':'),
+        VERSION,
+        merchant_id.to_i,
+        rno,
+        *digest_optional_info,
+        secret
+      ]
+
+      ::Digest::SHA512.base64digest(array.join(':'))
+    end
+
+    # Initializes the connection to klarna.
+    #
+    # @return [XMLRPC::Client] xmlrpc_client
     def xmlrpc_client
       return @xmlrpc_client if @xmlrpc_client
 
@@ -161,6 +184,9 @@ module Klarna
       @xmlrpc_client
     end
 
+    # Returns the klarna host.
+    #
+    # @return [String] host
     def host
       if @host
         @host
@@ -173,6 +199,9 @@ module Klarna
 
     private
 
+    # Returns the headers for the connection.
+    #
+    # @return [Hash] headers
     def headers
       @headers = {}
       @headers['Accept-Encoding'] = 'gzip,deflate'
