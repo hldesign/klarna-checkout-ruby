@@ -11,7 +11,8 @@ module Klarna
     KLARNA_API_VERSION = '4.1'
 
     attr_accessor :keepalive, :merchant_id, :secret, :country, :language,
-      :currency, :server, :pc_storage, :pc_uri, :environment, :use_ssl
+      :currency, :server, :pc_storage, :pc_uri, :environment, :use_ssl, :host,
+      :path, :port
 
     def initialize(config = {})
       @path = '/'
@@ -144,29 +145,29 @@ module Klarna
         optional_info
       ]
 
-      xmlrpc_client.call('activate', params_list)
+      xmlrpc_client.call('activate', KLARNA_API_VERSION, VERSION, *params_list)
     end
 
     def xmlrpc_client
-      @xmlrpc_client ||= begin
-        @xmlrpc_client = XMLRPC::Client.new_from_hash(
-          host: host,
-          path: path,
-          port: port,
-          use_ssl: use_ssl
-        )
-        @xmlrpc_client.http_header_extra = self.headers
-        @xmlrpc_client
-      end
+      return @xmlrpc_client if @xmlrpc_client
+
+      @xmlrpc_client = XMLRPC::Client.new_from_hash(
+        host: host,
+        path: path,
+        port: port,
+        use_ssl: use_ssl
+      )
+      @xmlrpc_client.http_header_extra = headers
+      @xmlrpc_client
     end
 
     def host
       if @host
         @host
       elsif environment == :production
-        'https://payment.klarna.com '
+        'payment.klarna.com'
       else
-        'https://payment.testdrive.klarna.com '
+        'payment.testdrive.klarna.com'
       end
     end
 
