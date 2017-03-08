@@ -111,6 +111,26 @@ order.purchase_country
 # => 'NO'
 ```
 
+# Klarna Order Management - XML-RPC API
+
+```ruby
+require 'klarna/api'
+
+# Create a client with the merchant credentials
+api_client = Klarna::Api::Client.new(
+  shared_secret: 'your-shared-secret',
+  merchant_id: '1337',
+  environment: :test # or :production
+)
+
+# Activate the order reservation
+api_client.activate('Reservation number')
+
+# Activate the order reservation and send optional information
+api_client.activate('Reservation number', { orderid1: 'my-order-id' })
+
+```
+
 ## TODO
 
 * Validation of objects according to documentation

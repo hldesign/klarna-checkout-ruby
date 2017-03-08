@@ -1,3 +1,8 @@
+## Version 1.1.5
+
+* Adds support for Klarna XML-RPC API.
+* Implements the 'Klarna Order Management' activate method.
+
 ## Version 1.1.4
 
 * Allows specifying which Klarna order attributes to update. This can be used for only updating the order status or adding a merchant reference to an existent order.
