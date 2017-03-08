@@ -1,3 +1,10 @@
+## Version 1.1.4
+
+* Allows specifying which Klarna order attributes to update. This can be used for only updating the order status or adding a merchant reference to an existent order.
+* Allows updating an order after initializing it.
+* Initial commit for 'Germany only' attributes support.
+* Client update_order can also be used to create a new order if id is not present.
+
 ## Version 1.1.3
 
 * Fix a bug where shipping address would not be passed to Klarna
