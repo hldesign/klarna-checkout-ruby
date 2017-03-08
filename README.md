@@ -72,6 +72,14 @@ order.id
 # Read an order from Klarna
 order = client.read_order("1234ABCD")
 
+# Update an existent order with cart items
+order.update(cart: { items: [...] })
+
+# Update an order with Klarna
+order = client.update_order(order)
+
+# Update the order status in Klarna
+order = client.update_order(order, { status: 'created'})
 
 # Configuring some global variables
 Klarna::Checkout.configure do |config|
@@ -82,7 +90,7 @@ Klarna::Checkout.configure do |config|
 end
 
 
-# Instead of repeating yourself with supplying the same attributes for each 
+# Instead of repeating yourself with supplying the same attributes for each
 # order you can configure some default attributes
 Klarna::Checkout::Order.defaults = {
   purchase_country: 'NO',

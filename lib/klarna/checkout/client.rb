@@ -78,6 +78,10 @@ module Klarna
       def update_order(order, attributes = nil)
         return false unless order.valid?
 
+        if attributes.present? && attributes.is_a?(Hash)
+          attributes = attributes.to_json
+        end
+
         response = write_order(order, attributes)
         if order.id.present?
           # Klarna update method returns 'An updated representation of the Checkout Order'
